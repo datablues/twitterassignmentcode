@@ -1,0 +1,100 @@
+#FINAL ALGORITHM
+#Feed negative and positive tweets to the classification function for training. (using the Sentiment140 dataset)
+#storing the training data in a dictinary
+import nltk
+import csv
+with open('training.1600000.processed.noemoticon.csv', 'rb') as csvfile:
+    twit = csv.reader(csvfile)
+    labels=['sentiment','id','date','query','user','tweettext']
+    i=0
+    dict={}
+    for row in twit:
+        temp={}
+        k=0
+        for j in labels:
+            v=row[k]
+            temp[j]=v
+            k=k+1
+        dict[i]=temp
+        i=i+1
+    for x in dict:
+        indicts=dict.values()
+
+
+    negativeTweets=[]
+    positiveTweets=[]
+  
+    for val in indicts:
+        if int(val['sentiment'])==4:
+            positiveTweets.append(val['tweettext'])
+        
+        elif int(val['sentiment'])==0:
+            negativeTweets.append(val['tweettext'])
+            
+    
+#below code is to make a list of positive tweets and negative tweets  
+    pos_tweets=[]
+    for i in range(len(positiveTweets)):
+        pos_tweets.append('positive')
+    
+    neg_tweets=[]
+    for i in range(len(negativeTweets)):
+        neg_tweets.append('negative')
+    
+    pos_vale=zip(positiveTweets,pos_tweets)
+    print pos_vale[147]
+    
+    neg_vale=zip(negativeTweets,neg_tweets)
+    print neg_vale[121]
+
+#below code is used for combining both negative and positive tweet with its sentiment which contains only those words which 
+#have more 3 or more characters(eg removing ---- in,of,at,it etc)
+    tweets = []
+    for (words, sentiment) in pos_vale + neg_vale:
+        words_filtered = [e.lower() for e in words.split() if len(e) >= 3]
+        tweets.append((words_filtered, sentiment))
+    print tweets[163]
+
+#creating a bag of all the words in the tweets which has words which are repeated
+    def bagOfWords(tweets):
+        all_words = []
+        for (words, sentiment) in tweets:
+            all_words.extend(words)
+        return all_words
+    
+#creating a list of unique words     
+    def wordFeatures(wordlist):
+        wordlist = nltk.FreqDist(wordlist)
+#above variable wordlist has a set of keys which are the words and values which are the number of times it has occured
+        word_features = wordlist.keys()
+        return word_features
+    
+    word_features = wordFeatures(bagOfWords(tweets))
+#above variable contains a list of unique words    
+
+    
+    def getFeatures(doc):
+        document_words = set(doc)
+        features = {}
+        for word in word_features:
+            features['contains(%s)' % word] = (word in document_words)
+        return features    
+#above function returns a dictionary which lists only those words as true which are present in doc and word_features
+
+    training = nltk.classify.apply_features(getFeatures, tweets)
+    print training[346][1]
+    print type(training)
+    
+#The variable ‘training’ contains the labeled feature sets. It is a list of tuples which each tuple containing the feature 
+#dictionary and the sentiment string for each tweet. The sentiment string is also called ‘label’. 
+    
+    classifier = nltk.NaiveBayesClassifier.train(training)
+    print type(classifier)
+    
+    print(classifier.show_most_informative_features(32))
+    
+#trying out example on classifier     
+    tweeteg = 'this is not good,this is very bad'
+    print classifier.classify(getFeatures(tweeteg.split()))
+
+    
